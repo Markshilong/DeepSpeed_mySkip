@@ -280,11 +280,11 @@ class DeepSpeedZeRoOffload(object):
 
     def _convert_to_zero_parameters(self, ds_config, module, mpu):
         non_zero_params = [p for p in module.parameters() if not is_zero_param(p)]
-        if non_zero_params:
+        if non_zero_params: # if non_zero_params is not empty
             zero_params = [p for p in module.parameters() if is_zero_param(p)]
-            if zero_params:
+            if zero_params: # if zero_params is not empty, then we need to convert to zero parameters
                 zero_params[0].convert_to_zero_parameters(param_list=non_zero_params)
-            else:
+            else: # Here, first time - zero_params is empty
                 group = None
                 if mpu:
                     group = mpu.get_data_parallel_group()

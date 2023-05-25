@@ -35,7 +35,9 @@ class PartitionedParamStatus(Enum):
 
 class AsyncPartitionedParameterSwapper(object):
 
-    def __init__(self, ds_config, model_dtype):
+    def __init__(self, ds_config, model_dtype, my_version):
+
+        self.my_version = my_version
 
         aio_op = AsyncIOBuilder().load(verbose=False)
         self.aio_handle = aio_op.aio_handle
@@ -74,6 +76,11 @@ class AsyncPartitionedParameterSwapper(object):
 
         self.invalid_buffer = torch.tensor(1).half()
 
+        if self.my_version:
+            self.finished_flag = False
+        else:
+            self.finished_flag = True # 
+
         if dist.get_rank() == 0:
             exclude_list = ['aio_read_handle', 'aio_write_handle', 'buffers']
             print_object(obj=self, name='AsyncPartitionedParameterSwapper', exclude_list=exclude_list)
@@ -86,8 +93,10 @@ class AsyncPartitionedParameterSwapper(object):
         torch_dtype_string = str(self.dtype).split(".")[1]
         self.swap_folder = os.path.join(self.swap_config.nvme_path, 'zero_stage_3', f'{torch_dtype_string}params',
                                         f'rank{dist.get_rank()}')
-        shutil.rmtree(self.swap_folder, ignore_errors=True)
-        os.makedirs(self.swap_folder, exist_ok=True)
+        
+        if (self.my_version == False):
+            shutil.rmtree(self.swap_folder, ignore_errors=True)
+            os.makedirs(self.swap_folder, exist_ok=True)
 
         self.swap_element_size = torch.tensor([], dtype=self.dtype).element_size()
 
@@ -191,7 +200,14 @@ class AsyncPartitionedParameterSwapper(object):
     def synchronize_writes(self):
         if self.pending_writes == 0:
             return
-        assert self.pending_writes == self.aio_write_handle.wait()
+        # original
+        # assert self.pending_writes == self.aio_write_handle.wait()
+        # my
+        if (self.my_version):
+            if self.finished_flag == True:
+                assert self.pending_writes == self.aio_write_handle.wait()
+        else:
+            assert self.pending_writes == self.aio_write_handle.wait()
         self.pending_writes = 0
         self.remove_partition_and_release_buffers(self.swap_out_params)
         self.swap_out_params = []
@@ -249,7 +265,10 @@ class AsyncPartitionedParameterSwapper(object):
         swap_out_params = self._get_swap_buffers(params)
         self._track_numel(params)
 
-        swap_out_tensors(self.aio_write_handle, swap_out_params, swap_out_paths)
+        if (self.my_version):
+            swap_out_tensors(self.aio_write_handle, swap_out_params, swap_out_paths, self.finished_flag)
+        else:
+            swap_out_tensors(self.aio_write_handle, swap_out_params, swap_out_paths, True)
 
         self.pending_writes += len(swap_out_params)
         self.swap_out_params += params

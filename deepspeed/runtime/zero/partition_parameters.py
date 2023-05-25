@@ -285,6 +285,9 @@ empty_buffers = {}
 class InsertPostInitMethodToModuleSubClasses(object):
 
     def __init__(self, enabled=True, mem_efficient_linear=True, ds_config=None, dtype=None):
+        self.my_version = True  # True for my version, False for original deepspeed version
+        self.my_print = True
+
         self.mem_efficient_linear = mem_efficient_linear
         self.enabled = enabled
         self._set_dtype(ds_config, dtype)
@@ -294,6 +297,7 @@ class InsertPostInitMethodToModuleSubClasses(object):
         self.wrapped_cls = set()
 
     def __enter__(self):
+        if(self.my_print):print("!!!!!!!! executing Init.fatherClass - __enter__()!!!!!!")
         if not self.enabled:
             return
 
@@ -441,6 +445,7 @@ class InsertPostInitMethodToModuleSubClasses(object):
         zero_init_context.append(self)
 
     def __exit__(self, exc_type, exc_value, traceback):
+        if(self.my_print):print("!!!!!!!! executing Init.fatherClass - __exit__()!!!!!!")
         if not self.enabled:
             return
 
@@ -451,14 +456,18 @@ class InsertPostInitMethodToModuleSubClasses(object):
         zero_init_context.pop()
         if self.nest_level == 0:
             if dist.get_rank() == 0:
+                if(self.my_version):self.set_finished_flag_True()
                 logger.info("finished initializing model with %.2fB parameters", param_count / 1e9)
-
         # Now that we cleaned up the metaclass injection, raise the exception.
         if exc_type is not None:
             return False
 
     # To be implemented by inheriting classes
     def _post_init_method(self, module):
+        pass
+    
+    # To be implemented by inheriting classes
+    def set_finished_flag_True(self):
         pass
 
     def _set_dtype(self, ds_config, dtype):
@@ -726,6 +735,8 @@ class Init(InsertPostInitMethodToModuleSubClasses):
         if _ds_config is not None:
             mem_efficient_linear = _ds_config.zero_config.memory_efficient_linear
         super().__init__(enabled=enabled, mem_efficient_linear=mem_efficient_linear, ds_config=_ds_config, dtype=dtype)
+        if(self.my_print):print("!!!!!!!! executing deepspeed.zero.Init __init__()!!!!!!")
+
         if not dist.is_initialized():
             init_distributed()
             assert dist.is_initialized(), "Parameters cannot be scattered without initializing deepspeed.comm"
@@ -759,7 +770,7 @@ class Init(InsertPostInitMethodToModuleSubClasses):
 
         # Enable fp16 param swapping to NVMe
         if self.remote_device == OffloadDeviceEnum.nvme:
-            self.param_swapper = AsyncPartitionedParameterSwapper(_ds_config, self.dtype)
+            self.param_swapper = AsyncPartitionedParameterSwapper(_ds_config, self.dtype, self.my_version)
         else:
             self.param_swapper = None
 
@@ -771,6 +782,11 @@ class Init(InsertPostInitMethodToModuleSubClasses):
         self.use_all_gather_into_tensor = dist.has_all_gather_into_tensor()
         if not self.use_all_gather_into_tensor:
             logger.info(f"all_gather_into_tensor API is not available in torch {torch.__version__}")
+
+    def set_finished_flag_True(self):
+        if (self.my_version):
+            self.param_swapper.finished_flag_True = True
+            if(self.my_print):print("!!!!!!!! flag has been set to True!!!!!!")
 
     def _update_persist_config(self, ds_config):
         Init.apply_param_persistence = True
@@ -805,6 +821,8 @@ class Init(InsertPostInitMethodToModuleSubClasses):
         see_memory_usage(f"Before converting and partitioning parmas in {module.__class__.__name__}", force=False)
 
         global param_count
+
+        count = 0
         for name, param in module.named_parameters(recurse=False):
             param_count += param.numel()
             if not is_zero_param(param):
@@ -818,7 +836,9 @@ class Init(InsertPostInitMethodToModuleSubClasses):
                     if dist.get_rank() == 0:
                         logger.warn(f"param `{name}` in {module.__class__.__name__} "
                                     f"not on GPU so was not broadcasted from rank 0")
-
+                
+                # if(count%10 == 0):print(f"!!!!!!!/10!!!!![{count}] time runing param.partition()!!!!!!")
+                count = count + 1
                 param.partition()
         see_memory_usage(
             f"Param count {param_count}. After converting and partitioning parmas in {module.__class__.__name__}",
@@ -1112,6 +1132,7 @@ class Init(InsertPostInitMethodToModuleSubClasses):
             #    print(f"Releasing {param.data.numel()}")
             if param.ds_tensor is not None and not has_been_updated:
 
+
                 #param.data = param.ds_tensor.data
 
                 see_memory_usage(f'Before partitioning param {param.ds_id} {param.shape}', force=False)
@@ -1160,7 +1181,7 @@ class Init(InsertPostInitMethodToModuleSubClasses):
             start = partition_size * self.get_partition_rank()
             end = start + partition_size
 
-            one_dim_param = param.contiguous().view(-1)
+            one_dim_param = param.contiguous().view(-1)  # create a new tensor with the same data but with a contiguous memory layout
 
             if start < param.ds_numel and end <= param.ds_numel:
                 src_tensor = one_dim_param.narrow(0, start, partition_size)
@@ -1655,7 +1676,8 @@ class GatheredParameters:
             self.params[0].partition(param_list=self.params, has_been_updated=False)
             return
 
-        handles = [dist.broadcast(p, self.src_rank, group=p.ds_process_group, async_op=True) for p in self.params]
-        for h in handles:
-            h.wait()
+        # handles = [dist.broadcast(p, self.src_rank, group=p.ds_process_group, async_op=True) for p in self.params]
+        # for h in handles:
+        #     h.wait()
+
         self.params[0].partition(param_list=self.params, has_been_updated=True)

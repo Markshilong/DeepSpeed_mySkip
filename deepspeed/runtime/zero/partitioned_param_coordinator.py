@@ -15,6 +15,8 @@ from deepspeed.runtime.zero.partition_parameters import *
 from deepspeed.runtime.swap_tensor.partitioned_param_swapper import PartitionedParamStatus
 from deepspeed.utils.debug import debug_module2name_id, debug_param2name_id
 from deepspeed.accelerator import get_accelerator
+# my
+from deepspeed.utils.debug import countt, module_index, my_print_params_info, my_saveload_module_individually
 
 
 def debug_rank0(message: str) -> None:
@@ -243,9 +245,30 @@ class PartitionedParameterCoordinator:
 
         params_to_fetch = frozenset(iter_params(current_submodule))
 
+        global module_index
+        ## ---------------------------------
+        # # # print weights into .txt
+        
+        # import os
+        # threshold_size = 1000 * 1024
+        # filename = '/home/mark/Research/a_MoE_experiments/weights_before_hookGather_withoutPrefetch_ori_1_inputchange.txt'
+        # with open(filename, 'a+') as f:
+        #     # file_size = os.path.getsize(filename)
+        #     if module_index < 3320:
+        #         f.write("-------------------------------------")
+        #         f.write(f"Name[{current_submodule.__class__.__name__}][{module_index}]\n")
+        #         f.write(f"Name[{current_submodule.state_dict()}]\n\n")
+        ## ---------------------------------
+
+        # ## print Embedding weights into .txt
+        # my_print_params_info('paramsEmbedding_beforeGather_withoutPrefetch_skip_1.txt', "Embedding", current_submodule)
+        # ## print LayerNorm weights into .txt
+        # my_print_params_info('paramsLayerNorm_beforeGather_withoutPrefetch_skip_1.txt', "T5LayerNorm", current_submodule)
+
         # kick off all gather for params in the immediately required submodule
         for param in params_to_fetch:
             debug_rank0(f"-fetch: {param.ds_summary()}")
+        
         self.__all_gather_params(params_to_fetch)
 
         # wait for parameters in the immediately needed submodule to become available
@@ -267,6 +290,30 @@ class PartitionedParameterCoordinator:
 
             assert param.ds_status == ZeroParamStatus.AVAILABLE, param.ds_summary()
         get_accelerator().current_stream().wait_stream(self.__allgather_stream)
+
+        # ## print Embedding weights into .txt
+        # my_print_params_info('paramsEmbedding_afterGather_withoutPrefetch_skip_1.txt', "Embedding", current_submodule)
+        # ## print LayerNorm weights into .txt
+        # my_print_params_info('paramsLayerNorm_afterGather_withoutPrefetch_skip_1.txt', "T5LayerNorm", current_submodule)
+
+        ## ---------------------------------
+        # save/load T5LayerNorm and Embedding weights
+        my_saveload_module_individually(current_submodule, 'load', print=False)
+        ## ---------------------------------
+        # # print weights into .txt
+        # import os
+        # threshold_size = 1000 * 1024
+        # filename = '/home/mark/Research/a_MoE_experiments/weights_skip_1_3200.txt'
+        # with open(filename, 'a+') as f:
+        #     # file_size = os.path.getsize(filename)
+        #     # if file_size < threshold_size:
+        #     if module_index < 3320:
+        #         f.write("-------------------------------------")
+        #         f.write(f"Name[{current_submodule.__class__.__name__}][{module_index}]\n")
+        #         f.write(f"Name[{current_submodule.state_dict()}]\n\n")
+
+        module_index = module_index + 1
+        ## ---------------------------------
 
         # kick off parameter prefetches for upcoming modules
         # don't prefetch if we dont have a completed model trace
@@ -328,10 +375,10 @@ class PartitionedParameterCoordinator:
 
                 for param in params_to_prefetch:
                     debug_rank0(f"-prefetch: {param.ds_summary()}")
-                self.__all_gather_params(params_to_prefetch)
+                # self.__all_gather_params(params_to_prefetch)
 
-                if self.__prefetch_nvme:
-                    self.__prefetch_nvme_param_partitions()
+                # if self.__prefetch_nvme:
+                #     self.__prefetch_nvme_param_partitions()
 
         self.__step_id += 1
 

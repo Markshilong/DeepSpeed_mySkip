@@ -23,6 +23,7 @@ def swap_in_tensors(swap_handle, tensor_buffers, swap_paths):
 
 def swap_out_tensors(swap_handle, tensor_buffers, swap_paths, finished_flag):
     for buffer, path in zip(tensor_buffers, swap_paths):
+        # my next line is mine
         if finished_flag == True:
             assert (swap_handle.async_pwrite(buffer, path) == 0)
 

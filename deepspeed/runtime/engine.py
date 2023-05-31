@@ -306,10 +306,12 @@ class DeepSpeedEngine(Module):
             model_parameters = list(model_parameters)
 
         if has_optimizer:
+            print("!!!!!!!!!!!!!!!!Getting into has_optimizer: line 314 of engine.py")
             self._configure_optimizer(optimizer, model_parameters)
             self._configure_lr_scheduler(lr_scheduler)
             self._report_progress(0)
         elif self.zero_optimization():
+            print("!!!!!!!!!!!!!!!!Getting into elif self.zero_optimization(): line 314 of engine.py")
             # no optim selected but zero is enabled
             self.optimizer = self._configure_zero_optimizer(optimizer=None)
         elif self.bfloat16_enabled():
@@ -1444,6 +1446,7 @@ class DeepSpeedEngine(Module):
         elif zero_stage == ZeroStageEnum.weights:
             assert not self.has_moe_layers, "MoE not supported with Stage 3"
             if isinstance(optimizer, DummyOptim):
+                print("!!!!!!!!!!!Getting into - if isinstance(optimizer, DummyOptim): line 1449 of engine.py")
                 log_dist("Creating ZeRO Offload", ranks=[0])
                 optimizer = DeepSpeedZeRoOffload(self.module,
                                                  timers=timers,
@@ -1457,6 +1460,7 @@ class DeepSpeedEngine(Module):
                                                  offload_param_config=self.zero_offload_param(),
                                                  mpu=self.mpu)
             else:
+                print("!!!!!!!!!!!Getting into - DummyOptim else: line 1463 of engine.py")
                 log_dist(
                     f'Creating fp16 ZeRO stage {zero_stage} optimizer,'
                     f' MiCS is enabled {mics_shard_size>0},'

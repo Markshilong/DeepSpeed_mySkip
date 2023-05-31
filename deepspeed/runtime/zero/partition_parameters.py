@@ -726,6 +726,7 @@ class Init(InsertPostInitMethodToModuleSubClasses):
 
                 model = deepspeed.zero.Init(module=model)
         """
+        # SEARCH: zero.Init()
         if config is not None:
             config_dict_or_path = config
             logger.warning(
@@ -1676,8 +1677,8 @@ class GatheredParameters:
             self.params[0].partition(param_list=self.params, has_been_updated=False)
             return
 
-        # handles = [dist.broadcast(p, self.src_rank, group=p.ds_process_group, async_op=True) for p in self.params]
-        # for h in handles:
-        #     h.wait()
+        handles = [dist.broadcast(p, self.src_rank, group=p.ds_process_group, async_op=True) for p in self.params]
+        for h in handles:
+            h.wait()
 
         self.params[0].partition(param_list=self.params, has_been_updated=True)

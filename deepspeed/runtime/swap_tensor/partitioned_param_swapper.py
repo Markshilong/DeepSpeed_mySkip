@@ -202,12 +202,15 @@ class AsyncPartitionedParameterSwapper(object):
             return
         # original
         # assert self.pending_writes == self.aio_write_handle.wait()
-        # my
+
+        # my start
         if (self.my_version):
             if self.finished_flag == True:
                 assert self.pending_writes == self.aio_write_handle.wait()
         else:
             assert self.pending_writes == self.aio_write_handle.wait()
+        # my end
+        
         self.pending_writes = 0
         self.remove_partition_and_release_buffers(self.swap_out_params)
         self.swap_out_params = []
@@ -265,10 +268,15 @@ class AsyncPartitionedParameterSwapper(object):
         swap_out_params = self._get_swap_buffers(params)
         self._track_numel(params)
 
+        # my start
         if (self.my_version):
             swap_out_tensors(self.aio_write_handle, swap_out_params, swap_out_paths, self.finished_flag)
         else:
             swap_out_tensors(self.aio_write_handle, swap_out_params, swap_out_paths, True)
+        # my end
+
+        # original
+        # swap_out_tensors(self.aio_write_handle, swap_out_params, swap_out_paths, True)
 
         self.pending_writes += len(swap_out_params)
         self.swap_out_params += params

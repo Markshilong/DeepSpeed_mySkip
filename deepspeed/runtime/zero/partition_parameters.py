@@ -285,7 +285,7 @@ empty_buffers = {}
 class InsertPostInitMethodToModuleSubClasses(object):
 
     def __init__(self, enabled=True, mem_efficient_linear=True, ds_config=None, dtype=None):
-        self.my_version = True  # True for my version, False for original deepspeed version
+        self.my_version = True  # True to skip  stage 1 (write to NVMe .swp)
         self.my_print = True
 
         self.mem_efficient_linear = mem_efficient_linear

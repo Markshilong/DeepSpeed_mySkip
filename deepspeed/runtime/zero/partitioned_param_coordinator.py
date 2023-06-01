@@ -375,10 +375,10 @@ class PartitionedParameterCoordinator:
 
                 for param in params_to_prefetch:
                     debug_rank0(f"-prefetch: {param.ds_summary()}")
-                # self.__all_gather_params(params_to_prefetch)
+                self.__all_gather_params(params_to_prefetch)
 
-                # if self.__prefetch_nvme:
-                #     self.__prefetch_nvme_param_partitions()
+                if self.__prefetch_nvme:
+                    self.__prefetch_nvme_param_partitions()
 
         self.__step_id += 1
 

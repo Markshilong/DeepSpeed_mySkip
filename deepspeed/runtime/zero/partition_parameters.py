@@ -285,7 +285,10 @@ empty_buffers = {}
 class InsertPostInitMethodToModuleSubClasses(object):
 
     def __init__(self, enabled=True, mem_efficient_linear=True, ds_config=None, dtype=None):
-        self.my_version = True  # True to skip  stage 1 (write to NVMe .swp)
+        import sys
+        sys.path.append('/home/mark/Research/a_MoE_experiments/my_debug_utils')
+        from my_debug_utils import my_skip_1_enabled
+        self.my_version = my_skip_1_enabled  # True to skip  stage 1 (write to NVMe .swp)
         self.my_print = True
 
         self.mem_efficient_linear = mem_efficient_linear
@@ -786,7 +789,7 @@ class Init(InsertPostInitMethodToModuleSubClasses):
 
     def set_finished_flag_True(self):
         if (self.my_version):
-            self.param_swapper.finished_flag_True = True
+            self.param_swapper.finished_flag = True
             if(self.my_print):print("!!!!!!!! flag has been set to True!!!!!!")
 
     def _update_persist_config(self, ds_config):

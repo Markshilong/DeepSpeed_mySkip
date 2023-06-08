@@ -16,8 +16,10 @@ from deepspeed.runtime.swap_tensor.partitioned_param_swapper import PartitionedP
 from deepspeed.utils.debug import debug_module2name_id, debug_param2name_id
 from deepspeed.accelerator import get_accelerator
 # my
-from deepspeed.utils.debug import countt, module_index, my_print_params_info, my_saveload_module_individually
-
+# from deepspeed.utils.debug import countt, module_index, my_print_params_info, my_saveload_module_individually
+import sys
+sys.path.append('/home/mark/Research/a_MoE_experiments')
+from my_debug_utils import countt, module_index, my_print_params_info, my_saveload_module_individually
 
 def debug_rank0(message: str) -> None:
     if dist.get_rank() == 0:
@@ -298,7 +300,9 @@ class PartitionedParameterCoordinator:
 
         ## ---------------------------------
         # save/load T5LayerNorm and Embedding weights
-        my_saveload_module_individually(current_submodule, 'load', print=False)
+        from my_debug_utils import my_skip_2_enabled
+        if (my_skip_2_enabled == True):
+            my_saveload_module_individually(current_submodule, 'load', print=False)
         ## ---------------------------------
         # # print weights into .txt
         # import os

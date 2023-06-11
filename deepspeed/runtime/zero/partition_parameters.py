@@ -788,7 +788,7 @@ class Init(InsertPostInitMethodToModuleSubClasses):
             logger.info(f"all_gather_into_tensor API is not available in torch {torch.__version__}")
 
     def set_finished_flag_True(self):
-        if (self.my_version):
+        if (self.my_version and self.param_swapper is not None):
             self.param_swapper.finished_flag = True
             if(self.my_print):print("!!!!!!!! flag has been set to True!!!!!!")
 

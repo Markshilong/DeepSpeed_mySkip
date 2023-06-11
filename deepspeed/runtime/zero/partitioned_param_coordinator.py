@@ -19,7 +19,7 @@ from deepspeed.accelerator import get_accelerator
 # from deepspeed.utils.debug import countt, module_index, my_print_params_info, my_saveload_module_individually
 import sys
 sys.path.append('/home/mark/Research/a_MoE_experiments')
-from my_debug_utils import countt, module_index, my_print_params_info, my_saveload_module_individually
+from my_debug_utils import countt, module_index, my_print_params_info, my_saveload_module_individually, forward_prehook_time_output
 
 def debug_rank0(message: str) -> None:
     if dist.get_rank() == 0:

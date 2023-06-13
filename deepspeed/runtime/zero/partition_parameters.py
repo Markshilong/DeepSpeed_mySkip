@@ -1070,7 +1070,7 @@ class Init(InsertPostInitMethodToModuleSubClasses):
                 assert param.ds_tensor.final_location == OffloadDeviceEnum.nvme and param.ds_status == ZeroParamStatus.NOT_AVAILABLE
                 swap_in_flight.append(param)
         if len(swap_in_list) > 0:
-            swap_in_list[0].nvme_swapper.swap_in(swap_in_list, async_op=False)
+            swap_in_list[0].nvme_swapper.swap_in(swap_in_list, async_op=False) # SEARCH: def swap_in(self, params, async_op=True, swap_in_buffers=None):
         elif len(swap_in_flight) > 0:
             swap_in_flight[0].nvme_swapper.synchronize_reads()
 

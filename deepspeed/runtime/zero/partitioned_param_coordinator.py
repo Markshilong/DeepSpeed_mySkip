@@ -18,7 +18,7 @@ from deepspeed.accelerator import get_accelerator
 # my
 # from deepspeed.utils.debug import countt, module_index, my_print_params_info, my_saveload_module_individually
 import sys
-sys.path.append('/home/mark/Research/a_MoE_experiments')
+sys.path.append('/home/shilong/Research/a_MoE_experiments')
 from my_debug_utils import countt, module_index, my_print_params_info, my_saveload_module_individually, forward_prehook_time_output
 
 def debug_rank0(message: str) -> None:
@@ -427,7 +427,8 @@ class PartitionedParameterCoordinator:
 
         if partitioned_params:
             with get_accelerator().stream(self.__allgather_stream):
-                handle = partitioned_params[0].all_gather_coalesced(partitioned_params)
+                handle = partitioned_params[0].all_gather_coalesced(partitioned_params) # SEARCH `def _convert_to_deepspeed_param`
+                # SEARCH: def all_gather_coalesced(params: Iterable[Parameter], safe_mode: bool = False) -> AllGatherCoalescedHandle:
 
             for param in partitioned_params:
                 assert param.ds_status == ZeroParamStatus.INFLIGHT, param.ds_summary()

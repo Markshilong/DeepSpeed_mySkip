@@ -187,7 +187,7 @@ class AsyncPartitionedParameterSwapper(object):
             print_rank_0(f"param {param.ds_id} is assigned swap in buffer id {buffer_id}  ")
             self.param_id_to_buffer_id[param_id] = buffer_id
             aligned_swap_numel = self._io_aligned_numel(self.param_id_to_numel[param_id])
-            swap_buffer = self.buffers.narrow(0, int(buffer_id * self.aligned_elements_per_buffer), aligned_swap_numel)
+            swap_buffer = self.buffers.narrow(0, int(buffer_id * self.aligned_elements_per_buffer), aligned_swap_numel) # torch.Tensor.narrow(dim, start, length) → Tensor
 
             self.param_id_to_swap_buffer[param_id] = swap_buffer
             compute_buffer = swap_buffer.narrow(0, 0, self.param_id_to_numel[param_id])

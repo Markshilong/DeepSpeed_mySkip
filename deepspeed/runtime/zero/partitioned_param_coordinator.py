@@ -426,7 +426,7 @@ class PartitionedParameterCoordinator:
                 self.__n_available_params += param.ds_numel
 
         if partitioned_params:
-            with get_accelerator().stream(self.__allgather_stream):
+            with get_accelerator().stream(self.__allgather_stream):  #ACUTALLY: with torch.cuda.stream(torch.cuda.Stream):
                 handle = partitioned_params[0].all_gather_coalesced(partitioned_params) # SEARCH `def _convert_to_deepspeed_param`
                 # SEARCH: def all_gather_coalesced(params: Iterable[Parameter], safe_mode: bool = False) -> AllGatherCoalescedHandle:
 
@@ -439,7 +439,7 @@ class PartitionedParameterCoordinator:
                 p for p in partitioned_params if p.ds_persist and p.ds_tensor.final_location == OffloadDeviceEnum.nvme
             ]
             if swap_persisted_params:
-                swap_persisted_params[0].nvme_swapper.remove_partition_and_release_buffers(swap_persisted_params)
+                swap_persisted_params[0].nvme_swapper.remove_partition_and_release_buffers(swap_persisted_params) #SEARCH def remove_partition_and_release_buffers(self, params):
 
     @instrument_w_nvtx
     def __release_param(self, param: Parameter) -> None:

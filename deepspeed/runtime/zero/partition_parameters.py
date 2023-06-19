@@ -40,14 +40,16 @@ all_wrapped_classes = set()
 
 class NoGatherHandle:
 
+    @instrument_w_nvtx
     def __init__(self, param: Parameter) -> None:
         if param.ds_status != ZeroParamStatus.INFLIGHT:
             raise RuntimeError(f"expected param {param.ds_summary()} to be available")
-
+        
         param.data = param.ds_tensor.data.to(device=get_accelerator().current_device_name(),
                                              non_blocking=True).view(param.ds_shape)
         self.__param = param
 
+    @instrument_w_nvtx
     def wait(self) -> None:
         get_accelerator().current_stream().synchronize()
         self.__param.ds_status = ZeroParamStatus.AVAILABLE
@@ -597,7 +599,7 @@ class AllGatherCoalescedHandle:
 
         self.complete = True
 
-
+@instrument_w_nvtx
 def _no_gather_coalesced(params: Iterable[Parameter]) -> AllGatherCoalescedHandle:
     for param in params:
         if param.ds_status != ZeroParamStatus.NOT_AVAILABLE:
@@ -1059,6 +1061,7 @@ class Init(InsertPostInitMethodToModuleSubClasses):
     def _partition_numel(self, param):
         return param.ds_tensor.ds_numel
 
+    @instrument_w_nvtx
     def _ensure_availability_of_partitioned_params(self, params):
         swap_in_list = []
         swap_in_flight = []
@@ -1072,7 +1075,7 @@ class Init(InsertPostInitMethodToModuleSubClasses):
         if len(swap_in_list) > 0:
             swap_in_list[0].nvme_swapper.swap_in(swap_in_list, async_op=False) # SEARCH: def swap_in(self, params, async_op=True, swap_in_buffers=None):
         elif len(swap_in_flight) > 0:
-            swap_in_flight[0].nvme_swapper.synchronize_reads()
+            swap_in_flight[0].nvme_swapper.synchronize_reads() # SEARCH: def synchronize_reads(self):
 
     @instrument_w_nvtx
     def _all_gather(self, param_list, async_op=False, hierarchy=None):

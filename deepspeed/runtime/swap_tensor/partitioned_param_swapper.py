@@ -220,7 +220,7 @@ class AsyncPartitionedParameterSwapper(object):
         if self.pending_reads == 0:
             return
 
-        assert self.pending_reads == self.aio_read_handle.wait()
+        assert self.pending_reads == self.aio_read_handle.wait()  #SEARCH: int deepspeed_aio_handle_t::wait()
 
         self.pending_reads = 0
 
@@ -334,7 +334,7 @@ class AsyncPartitionedParameterSwapper(object):
         self._update_inflight_swap_in(params, swap_in_buffers, inflight_numel)
 
         if not async_op:
-            self.synchronize_reads()
+            self.synchronize_reads() # lsl: After this, all self.pending_reads == 0, copy from buffer to param.ds_tensor.data 
 
     # Enables swapping into buffer that is out the control of swapper. This is always synchronous
     def swap_into_buffer(self, param, dest_buffer):

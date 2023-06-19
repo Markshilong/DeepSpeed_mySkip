@@ -268,6 +268,8 @@ class PartitionedParameterCoordinator:
         # my_print_params_info('paramsLayerNorm_beforeGather_withoutPrefetch_skip_1.txt', "T5LayerNorm", current_submodule)
 
         # kick off all gather for params in the immediately required submodule
+
+        torch.cuda.nvtx.range_push(f"step[{self.__step_id}]:Fetch current module")
         for param in params_to_fetch:
             debug_rank0(f"-fetch: {param.ds_summary()}")
         
@@ -284,14 +286,15 @@ class PartitionedParameterCoordinator:
                     if len(self.__ongoing_fetch_events) > self.__max_ongoing_fetch_events:
                         self.__ongoing_fetch_events.popleft().synchronize()
 
-                    self.__inflight_param_registry.pop(param).wait()
+                    self.__inflight_param_registry.pop(param).wait()  # current_stream().synchronize()
 
-                    event = get_accelerator().Event()
+                    event = get_accelerator().Event()  # torch.cuda.Event
                     event.record()
                     self.__ongoing_fetch_events.append(event)
 
             assert param.ds_status == ZeroParamStatus.AVAILABLE, param.ds_summary()
         get_accelerator().current_stream().wait_stream(self.__allgather_stream)
+        torch.cuda.nvtx.range_pop()
 
         # ## print Embedding weights into .txt
         # my_print_params_info('paramsEmbedding_afterGather_withoutPrefetch_skip_1.txt', "Embedding", current_submodule)
@@ -384,6 +387,8 @@ class PartitionedParameterCoordinator:
                 if self.__prefetch_nvme:
                     self.__prefetch_nvme_param_partitions()
 
+            torch.cuda.nvtx.range_pop()
+
         self.__step_id += 1
 
     @instrument_w_nvtx
@@ -426,7 +431,7 @@ class PartitionedParameterCoordinator:
                 self.__n_available_params += param.ds_numel
 
         if partitioned_params:
-            with get_accelerator().stream(self.__allgather_stream):  #ACUTALLY: with torch.cuda.stream(torch.cuda.Stream):
+            with get_accelerator().stream(self.__allgather_stream):  #ACUTALLY: with torch.cuda.stream(torch.cuda.Stream object instance):
                 handle = partitioned_params[0].all_gather_coalesced(partitioned_params) # SEARCH `def _convert_to_deepspeed_param`
                 # SEARCH: def all_gather_coalesced(params: Iterable[Parameter], safe_mode: bool = False) -> AllGatherCoalescedHandle:
 

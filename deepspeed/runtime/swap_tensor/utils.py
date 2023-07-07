@@ -21,7 +21,7 @@ def swap_in_tensors(swap_handle, tensor_buffers, swap_paths):
         assert (swap_handle.async_pread(buffer, path) == 0)
 
 
-def swap_out_tensors(swap_handle, tensor_buffers, swap_paths, finished_flag):
+def swap_out_tensors(swap_handle, tensor_buffers, swap_paths, finished_flag=True):
     for buffer, path in zip(tensor_buffers, swap_paths):
         # my next line is mine
         if finished_flag == True:

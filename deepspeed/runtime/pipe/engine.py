@@ -4,6 +4,7 @@
 # DeepSpeed Team
 
 from types import MethodType
+from deepspeed.utils.nvtx import instrument_w_nvtx
 
 import torch
 from deepspeed import comm as dist
@@ -222,6 +223,7 @@ class PipelineEngine(DeepSpeedEngine):
         pipe_dataloader = RepeatingLoader(pipe_dataloader)
         self.set_dataloader(pipe_dataloader)
 
+    @instrument_w_nvtx
     def _exec_reduce_tied_grads(self):
         # We need to run this first to write to self.averaged_gradients;
         # since this class turns `enable_backward_allreduce` off,
@@ -239,6 +241,7 @@ class PipelineEngine(DeepSpeedEngine):
             grad = weight._hp_grad if self.bfloat16_enabled() else weight.grad
             dist.all_reduce(grad, group=group)
 
+    @instrument_w_nvtx
     def _exec_reduce_grads(self):
         self._force_grad_boundary = True
         if self.pipeline_enable_backward_allreduce:
@@ -597,6 +600,7 @@ class PipelineEngine(DeepSpeedEngine):
 
         return batch
 
+    @instrument_w_nvtx
     def _exec_forward_pass(self, buffer_id):
         self.tput_timer.start()
         self.mem_status('BEFORE FWD', reset_max=True)
@@ -677,6 +681,7 @@ class PipelineEngine(DeepSpeedEngine):
                 for idx, l in enumerate(self.loss):
                     self.total_loss[idx] += l.detach()
 
+    @instrument_w_nvtx
     def _exec_backward_pass(self, buffer_id):
         assert self.optimizer is not None, "must provide optimizer during " \
                                            "init in order to use backward"
@@ -751,6 +756,7 @@ class PipelineEngine(DeepSpeedEngine):
 
         self.mem_status('AFTER BWD')
 
+    @instrument_w_nvtx
     def _exec_load_micro_batch(self, buffer_id):
         if self.wall_clock_breakdown():
             self.timers('batch_input').start()
@@ -910,6 +916,7 @@ class PipelineEngine(DeepSpeedEngine):
         else:
             raise NotImplementedError(f'Could not receive type {type(recv_type)}')
 
+    @instrument_w_nvtx
     def _exec_send_activations(self, buffer_id):
         if self.wall_clock_breakdown():
             self.timers('pipe_send_output').start()
@@ -946,6 +953,7 @@ class PipelineEngine(DeepSpeedEngine):
         if self.wall_clock_breakdown():
             self.timers('pipe_send_output').stop()
 
+    @instrument_w_nvtx
     def _exec_send_grads(self, buffer_id):
         if self.wall_clock_breakdown():
             self.timers('pipe_send_grad').start()
@@ -1002,6 +1010,7 @@ class PipelineEngine(DeepSpeedEngine):
         if self.wall_clock_breakdown():
             self.timers('pipe_send_grad').stop()
 
+    @instrument_w_nvtx
     def _exec_recv_activations(self, buffer_id):
         if self.wall_clock_breakdown():
             self.timers('pipe_recv_input').start()
@@ -1045,6 +1054,7 @@ class PipelineEngine(DeepSpeedEngine):
         if self.wall_clock_breakdown():
             self.timers('pipe_recv_input').stop()
 
+    @instrument_w_nvtx
     def _exec_recv_grads(self, buffer_id):
         if self.wall_clock_breakdown():
             self.timers('pipe_recv_grad').start()
@@ -1102,6 +1112,7 @@ class PipelineEngine(DeepSpeedEngine):
         if self.wall_clock_breakdown():
             self.timers('pipe_recv_grad').stop()
 
+    @instrument_w_nvtx
     def _exec_optimizer_step(self, lr_kwargs=None):
         if self.wall_clock_breakdown():
             self.timers('step_microstep').start()

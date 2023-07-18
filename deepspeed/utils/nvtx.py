@@ -4,6 +4,7 @@
 # DeepSpeed Team
 
 from deepspeed.accelerator import get_accelerator
+from torch.cuda import nvtx
 
 
 def instrument_w_nvtx(func):
@@ -12,6 +13,16 @@ def instrument_w_nvtx(func):
 
     def wrapped_fn(*args, **kwargs):
         get_accelerator().range_push(func.__qualname__)
+        ret_val = func(*args, **kwargs)
+        get_accelerator().range_pop()
+        return ret_val
+
+    return wrapped_fn
+
+def my_nvtx_wrapper(func):
+    
+    def wrapped_fn(*args, **kwargs):
+        get_accelerator().range_push(func.__name__)
         ret_val = func(*args, **kwargs)
         get_accelerator().range_pop()
         return ret_val

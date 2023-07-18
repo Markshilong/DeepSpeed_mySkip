@@ -325,6 +325,7 @@ class PartitionedParameterCoordinator:
         # kick off parameter prefetches for upcoming modules
         # don't prefetch if we dont have a completed model trace
         if self.is_complete_trace():
+            torch.cuda.nvtx.range_push(f"step[{self.__step_id}]:PreFetch current module")
             # go through the parameters we need for the current module and pop them
             # off the fetch queue so that they aren't prefetched later.
             # if params have already been popped off the fetch queue by earlier

@@ -61,7 +61,7 @@ def send(tensor, dest_stage, async_op=False):
     else:
 
         if can_send_recv():
-            return dist.send(tensor, dest_rank)
+            return dist.send(tensor, dest_rank) # torch.distributed.send(tensor=tensor, dst=dst, group=group, tag=tag)
         else:
             group = _get_send_recv_group(src_stage, dest_stage)
             src_rank = _grid.stage_to_global(stage_id=src_stage)

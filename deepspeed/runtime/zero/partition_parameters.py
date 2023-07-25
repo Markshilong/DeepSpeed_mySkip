@@ -843,7 +843,6 @@ class Init(InsertPostInitMethodToModuleSubClasses):
                         logger.warn(f"param `{name}` in {module.__class__.__name__} "
                                     f"not on GPU so was not broadcasted from rank 0")
                 
-                # if(count%10 == 0):print(f"!!!!!!!/10!!!!![{count}] time runing param.partition()!!!!!!")
                 count = count + 1
                 param.partition()
         see_memory_usage(

@@ -306,12 +306,12 @@ class DeepSpeedEngine(Module):
             model_parameters = list(model_parameters)
 
         if has_optimizer:
-            print("!!!!!!!!!!!!!!!!Getting into has_optimizer: line 314 of engine.py")
+            print("!!!!! line 309")
             self._configure_optimizer(optimizer, model_parameters)
             self._configure_lr_scheduler(lr_scheduler)
             self._report_progress(0)
         elif self.zero_optimization():
-            print("!!!!!!!!!!!!!!!!Getting into elif self.zero_optimization(): line 314 of engine.py")
+            print("!!!!! line 314")
             # no optim selected but zero is enabled
             self.optimizer = self._configure_zero_optimizer(optimizer=None)
         elif self.bfloat16_enabled():
@@ -1381,6 +1381,7 @@ class DeepSpeedEngine(Module):
         return optimizer
 
     def _configure_zero_optimizer(self, optimizer):
+        # lslmark: _configure_zero_optimizer
         zero_stage = self.zero_optimization_stage()
         mics_shard_size = self.mics_shard_size()
 
@@ -1414,6 +1415,7 @@ class DeepSpeedEngine(Module):
                 if overlap_comm:
                     logger.warning("Pipeline parallelism does not support overlapped communication, will be disabled.")
                     overlap_comm = False
+            # lslmark: DeepSpeedZeroOptimizer
             optimizer = DeepSpeedZeroOptimizer(
                 optimizer,
                 self.param_names,

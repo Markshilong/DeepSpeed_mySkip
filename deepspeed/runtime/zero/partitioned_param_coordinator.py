@@ -18,7 +18,7 @@ from deepspeed.accelerator import get_accelerator
 # my
 # from deepspeed.utils.debug import countt, module_index, my_print_params_info, my_saveload_module_individually
 import sys
-sys.path.append('/home/shilonglei/OOC/a_MoE_experiments')
+sys.path.append('/shared_ssd_storage/shilonglei/OOC/a_MoE_experiments')
 from my_debug_utils import countt, module_index, my_print_params_info, my_saveload_module_individually, forward_prehook_time_output
 
 def debug_rank0(message: str) -> None:

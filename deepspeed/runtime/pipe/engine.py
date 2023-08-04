@@ -55,8 +55,9 @@ class PipelineEngine(DeepSpeedEngine):
     def __init__(self, has_bool_tensors=False, *super_args, **super_kwargs):
         super().__init__(*super_args, **super_kwargs)
         assert isinstance(self.module, PipelineModule), "model must base PipelineModule"
-
-        assert self.zero_optimization_stage() < 2, "ZeRO-2 and ZeRO-3 are incompatible with pipeline parallelism"
+        # my comment:
+        print("!!!!! DISABLE: ZeRO-2 and ZeRO-3 are incompatible with pipeline parallelism")
+        # assert self.zero_optimization_stage() < 2, "ZeRO-2 and ZeRO-3 are incompatible with pipeline parallelism"
 
         # We schedule the all-reduces, so disable it in super().backward()
         self.enable_backward_allreduce = False

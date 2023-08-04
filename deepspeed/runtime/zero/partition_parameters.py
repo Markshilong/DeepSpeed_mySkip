@@ -828,7 +828,6 @@ class Init(InsertPostInitMethodToModuleSubClasses):
 
         global param_count
 
-        count = 0
         for name, param in module.named_parameters(recurse=False):
             param_count += param.numel()
             if not is_zero_param(param):
@@ -836,14 +835,14 @@ class Init(InsertPostInitMethodToModuleSubClasses):
                 print_rank_0(
                     f"Partitioning param {debug_param2name_id_shape(param)} module={debug_module2name(module)}")
 
-                if get_accelerator().on_accelerator(param):
-                    dist.broadcast(param, 0, self.get_dp_process_group())
-                else:
-                    if dist.get_rank() == 0:
-                        logger.warn(f"param `{name}` in {module.__class__.__name__} "
-                                    f"not on GPU so was not broadcasted from rank 0")
+                # if get_accelerator().on_accelerator(param):
+                #     # lslmark: for Pipeline, temporarily comment
+                #     dist.broadcast(param, 0, self.get_dp_process_group())
+                # else:
+                #     if dist.get_rank() == 0:
+                #         logger.warn(f"param `{name}` in {module.__class__.__name__} "
+                #                     f"not on GPU so was not broadcasted from rank 0")
                 
-                count = count + 1
                 param.partition()
         see_memory_usage(
             f"Param count {param_count}. After converting and partitioning parmas in {module.__class__.__name__}",

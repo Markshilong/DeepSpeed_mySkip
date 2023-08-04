@@ -246,7 +246,7 @@ class DeepSpeedZeRoOffload(object):
 
         self.forward_hooks = []
         self.backward_hooks = []
-        self.setup_zero_stage3_hooks()
+        # self.setup_zero_stage3_hooks()
         print_rank_0(
             f'Created module hooks: forward = {len(self.forward_hooks)}, backward = {len(self.backward_hooks)}',
             force=False)
